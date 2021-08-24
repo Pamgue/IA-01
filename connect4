@@ -1,0 +1,89 @@
+#lang racket
+
+(define v (make-vector 42))
+(vector-set! v 18 1)
+(vector-set! v 24 1)
+(vector-set! v 30 1)
+(vector-set! v 36 1)
+
+;#(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0) se usa un vector unidimensional para representar el tablero
+;; 0: celdas vacias
+;; 1: piezas p1
+;; 2: piezas p2
+
+
+(define (check-4-horizontal board)
+  (define player 0); si gana p1->1,p2->2, sino 0
+  (define pos 0)
+  (for (
+        [i (in-range 6)])
+    (for (
+        [j (in-range 4)])
+      (set! pos (+ (* i 7) j))
+      (when (and
+             (or (= (vector-ref board pos) 1) (= (vector-ref board pos) 2))
+             (= (vector-ref board pos) (vector-ref board (+ 1 pos)))
+             (= (vector-ref board (+ 1 pos)) (vector-ref board (+ 2 pos)))
+             (= (vector-ref board (+ pos 2)) (vector-ref board (+ 3 pos))))
+        (set! player (vector-ref board pos)))))
+  player)
+
+(define (check-4-vertical board)
+  (define player 0); si gana p1->1,p2->2, sino 0
+  (define pos 0)
+  (for (
+        [j (in-range 7)]);;iteramos primero columnas
+    (for (
+        [i (in-range 3)]);;luego iteramos filas
+      (set! pos (+ (* i 7) j))
+      (when (and
+             (or (= (vector-ref board pos) 1) (= (vector-ref board pos) 2))
+             (= (vector-ref board pos) (vector-ref board (+ 7 pos)))
+             (= (vector-ref board (+ 7 pos)) (vector-ref board (+ 14 pos)))
+             (= (vector-ref board (+ 14 pos)) (vector-ref board (+ 21 pos))))
+        (set! player (vector-ref board pos)))))
+  player)
+
+
+(define (check-4-main-diagonal board) ; \
+  (define player 0); si gana p1->1,p2->2, sino 0
+  (define pos 0)
+  (for (
+        [j (in-range 4)]);;iteramos primero columnas
+    (for (
+        [i (in-range 3)]);;luego iteramos filas
+      (set! pos (+ (* i 7) j))
+      (when (and
+             (or (= (vector-ref board pos) 1) (= (vector-ref board pos) 2))
+             (= (vector-ref board pos) (vector-ref board (+ 8 pos)))
+             (= (vector-ref board (+ 8 pos)) (vector-ref board (+ 16 pos)))
+             (= (vector-ref board (+ 16 pos)) (vector-ref board (+ 24 pos))))
+        (set! player (vector-ref board pos)))))
+  player)
+
+(define (check-4-second-diagonal board) ; /
+  (define player 0); si gana p1->1,p2->2, sino 0
+  (define pos 0)
+  (for (
+        [j (in-range 3 7)]);;iteramos primero columnas
+    (for (
+        [i (in-range 3)]);;luego iteramos filas
+      (set! pos (+ (* i 7) j))
+      (printf " ~a " pos)
+      (when (and
+             (or (= (vector-ref board pos) 1) (= (vector-ref board pos) 2))
+             (= (vector-ref board pos) (vector-ref board (+ 6 pos)))
+             (= (vector-ref board (+ 6 pos)) (vector-ref board (+ 12 pos)))
+             (= (vector-ref board (+ 12 pos)) (vector-ref board (+ 18 pos))))
+        (set! player (vector-ref board pos)))))
+  player)
+
+
+(define (print-board board)
+  (define pos 0)
+    (for (
+        [i (in-range 6)]);;iteramos primero columnas
+    (for (
+        [j (in-range 7)]);;luego iteramos filas
+      (set! pos (+ (* i 7) j))
+      ;(printf " ~a " (vector-ref board pos)))(printf "\n")))
