@@ -82,8 +82,8 @@
 (define (print-board board)
   (define pos 0)
     (for (
-        [i (in-range 6)]);;iteramos primero columnas
+        [i '(5 4 3 2 1 0)]);;iteramos primero columnas
     (for (
         [j (in-range 7)]);;luego iteramos filas
       (set! pos (+ (* i 7) j))
-      ;(printf " ~a " (vector-ref board pos)))(printf "\n")))
+      (printf " ~a " (vector-ref board pos)))(printf "\n")))
