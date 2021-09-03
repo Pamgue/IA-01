@@ -11,27 +11,31 @@
 ;; 1: piezas p1
 ;; 2: piezas p2
 
-(define (game-loop) ;;pasar turno inicial 
-  (when (equal? #f game-status) 0)
-        ((cond
-          [(equal? turn 1)
-            (print-board v)
-              (displayln "Turno Jugador, elija columna 0-6")
-              (define token (read))       
-              (check-valid-move token)
-              (cond [(equal? (check-win) 1)(set! game-status #f) (displayln "Jugador gana")]
-                    [(equal? (check-win) 2)(set! game-status #f) (displayln "IA gana")]
-                    [(equal? (check-win) -1)(set! game-status #f) (displayln "Empate")]
-                    [else (change-turn) (game-loop)])]
-          [else
+(define (game-loop) ;;pasar turno inicial
+  (cond
+    [(equal? #f game-status) 0]
+    [else (game-loop-aux)]))
+
+(define (game-loop-aux)
+  (cond
+    [(equal? turn 1) (print-board v)
+                     (displayln "Turno Jugador, elija columna 0-6")
+                     (define token (read))       
+                     (check-valid-move token)
+                     (cond [(equal? (check-win) 1)(set! game-status #f) (displayln "Jugador gana")]
+                           [(equal? (check-win) 2)(set! game-status #f) (displayln "IA gana")]
+                           [(equal? (check-win) -1)(set! game-status #f) (displayln "Empate")]
+                           [else (change-turn) (game-loop)])]
+    [else
            (print-board v)
            (displayln "Turno IA, elija columna 0-6")
-              (define token (read))       
-              (check-valid-move token)
-              (cond [(equal? (check-win) 1)(set! game-status #f) (displayln "Jugador gana")]
+           (define token (read))       
+           (check-valid-move token)
+           (cond [(equal? (check-win) 1)(set! game-status #f) (displayln "Jugador gana")]
                     [(equal? (check-win) 2)(set! game-status #f) (displayln "IA gana")]
                     [(equal? (check-win) -1)(set! game-status #f) (displayln "Empate")]
-                    [else (change-turn) (game-loop)])])))
+                    [else (change-turn) (game-loop)])]))
+
 
 
 (define (update-game-board col)
