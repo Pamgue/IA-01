@@ -71,8 +71,7 @@
     [(equal? turn 1) (print-board v)
                      (displayln "Turno Jugador, elija columna 0-6")
                      ;;(define token (read))
-                     (get-mouse-click connect)
-                     (check-valid-move (posn-to-col (posn-x (query-mouse-posn connect))))
+                     (get-input)
                      (cond [(equal? (check-win) 1)(set! game-status #f) (displayln "Jugador gana")]
                            [(equal? (check-win) 2)(set! game-status #f) (displayln "IA gana")]
                            [(equal? (check-win) -1)(set! game-status #f) (displayln "Empate")]
@@ -82,13 +81,17 @@
            (displayln "Turno IA, elija columna 0-6")
            ;;(define token (read))       
            ;;(check-valid-move token)
-           (get-mouse-click connect)
-           (check-valid-move (posn-to-col (posn-x (query-mouse-posn connect))))
+           (get-input)
            (cond [(equal? (check-win) 1)(set! game-status #f) (displayln "Jugador gana")]
                     [(equal? (check-win) 2)(set! game-status #f) (displayln "IA gana")]
                     [(equal? (check-win) -1)(set! game-status #f) (displayln "Empate")]
                     [else (change-turn)(change-color)(game-loop)])]))
-
+(define (get-input)
+  (get-mouse-click connect)
+  (define move (posn-to-col (posn-x (query-mouse-posn connect))))
+  (cond
+    [(equal? (check-valid-move move)  #t) #t]
+    [else (get-input)]))
  
 (define (update-game-board col)
   (define position (+ (* 7 (vector-ref celds col)) col))
