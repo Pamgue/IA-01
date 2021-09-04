@@ -10,10 +10,6 @@
 (define actual-color "red")
 
 
-;#(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0) se usa un vector unidimensional para representar el tablero
-;; 0: celdas vacias
-;; 1: piezas p1
-;; 2: piezas p2
 
 (open-graphics)
 
@@ -31,6 +27,8 @@
 ;;((draw-solid-ellipse connect)(make-posn 450 10) 100 100 "white")
 ;;((draw-solid-ellipse connect)(make-posn 560 10) 100 100 "white")
 ;;((draw-solid-ellipse connect)(make-posn 670 10) 100 100 "white")
+
+
 (define board-y #(560 560 560 560 560 560 560
                   450 450 450 450 450 450 450
                   340 340 340 340 340 340 340
@@ -56,7 +54,7 @@
     [(equal? #f game-status) 0]
     [else (game-loop-aux)]))
 
-(define (posn-to-col x)
+(define (posn-to-col x);;toma las coordenadas x del click en la ventana, utilizando intervalos para elegir la columna
   (cond
     [(and (> x 0) (< x 116)) 0]
     [(and (> x 115) (< x 226)) 1]
@@ -67,11 +65,13 @@
     [(and (> x 665) (< x 776)) 6]))
 
 (define (game-loop-aux)
+
   (cond
     [(equal? turn 1) (print-board v)
                      (displayln "Turno Jugador, elija columna 0-6")
                      ;;(define token (read))
                      (get-input)
+                     (displayln celds)
                      (cond [(equal? (check-win) 1)(set! game-status #f) (displayln "Jugador gana")]
                            [(equal? (check-win) 2)(set! game-status #f) (displayln "IA gana")]
                            [(equal? (check-win) -1)(set! game-status #f) (displayln "Empate")]
@@ -81,24 +81,33 @@
            (displayln "Turno IA, elija columna 0-6")
            ;;(define token (read))       
            ;;(check-valid-move token)
-           (get-input)
+           ;;(get-input)
+           (sleep/yield 2)
+           ;;(define move )
+           (check-valid-move (best-IA-move v turn celds))
+           ;;(update-game-board move);;AGREGAR MINIMAX
+           (displayln celds)
            (cond [(equal? (check-win) 1)(set! game-status #f) (displayln "Jugador gana")]
                     [(equal? (check-win) 2)(set! game-status #f) (displayln "IA gana")]
                     [(equal? (check-win) -1)(set! game-status #f) (displayln "Empate")]
                     [else (change-turn)(change-color)(game-loop)])]))
+
+
 (define (get-input)
   (get-mouse-click connect)
   (define move (posn-to-col (posn-x (query-mouse-posn connect))))
   (cond
-    [(equal? (check-valid-move move)  #t) #t]
+    [(equal? (check-valid-move move)  #t) #t];;Si no es una columna valida, se encicla hasta elegir una valida, que permita colocar fichas
     [else (get-input)]))
  
-(define (update-game-board col)
-  (define position (+ (* 7 (vector-ref celds col)) col))
-  (vector-set! v  position turn)
-  ((draw-solid-ellipse connect)
+(define (update-game-board col);;actualiza la UI
+  (define position (+ (* 7 (vector-ref celds col)) col));; se convierte la columna en la posicion del vector del tablero
+  (vector-set! v  position turn);;se actualiza el TABLERO GLOBAL, cuidado!!!
+  ((draw-solid-ellipse connect);;se dibuja la ficha en el tablero
       (make-posn (vector-ref board-x position) (vector-ref board-y position)) 100 100 actual-color))
    
+
+
 
 (define (check-valid-move col)
   (cond
@@ -107,15 +116,129 @@
          (vector-set! celds col (add1 (vector-ref celds col)))
          (set! tokens (add1 tokens)) #t])) ;;retorna true si el movimiento es valido y actualiza el tope de la columna del juego
 
+
+
 (define (change-turn);;cambiar el turno 1: IA 2: jugador
   (if (equal? turn 1)
       (set! turn 2)
       (set! turn 1)))
 
+
+
 (define (change-color);;cambiar el turno 1: IA 2: jugador
   (if (equal? actual-color "red")
       (set! actual-color "yellow")
       (set! actual-color "red")))
+
+
+;;Para contar las fichas de un tipo iguales en los grupos de 4, ya sea horizontal, vertical o diagonales
+
+(define (count-matches word words);;word es la cadena a buscar en la lista(words)
+  (cond[(null? words) 0];;si la lista esta vacia se retorna 0
+       [(equal? word (first words)) (+ 1 (count-matches word (rest words)))];;se compara el primer elemento de la lista con word y se llama la recursion cortando el primer elemento
+       [else (count-matches word (rest words))];;se corta la lista sin sumar a la pila,
+   ))
+
+
+
+(define (score-IA-move board token)
+  (define score 0)
+  ;;(main-column board turn))
+  (displayln score)
+  ;;(sleep/yield 1)
+  (define pos 0)
+    (for (
+        [i (in-range 6)])
+    (for (
+        [j (in-range 4)])
+      (define t (list (vector-ref board pos) (vector-ref board (+ 1 pos)) (vector-ref board (+ 2 pos)) (vector-ref board (+ 3 pos))))
+      (set! pos (+ (* i 7) j))
+      (cond
+        [(equal? (count-matches token t) 4) (set! score (+ 1000 score))]
+        [(and (equal? (count-matches token t) 3) (equal? (count-matches 0 t) 1)) (set! score (+ 100 score))]
+        [(and (equal? (count-matches token t) 1) (equal? (count-matches 1 t) 3)) (set! score (+ 500 score))]
+        )
+     ))
+  (for (
+        [j (in-range 7)]);;iteramos primero columnas
+    (for (
+        [i (in-range 3)]);;luego iteramos filas
+      (set! pos (+ (* i 7) j))
+      (define t (list (vector-ref board pos) (vector-ref board (+ 7 pos)) (vector-ref board (+ 14 pos)) (vector-ref board (+ 21 pos))))
+      (cond
+        [(equal? (count-matches token t) 4) (set! score (+ 1000 score))]
+        [(and (equal? (count-matches token t) 3) (equal? (count-matches 0 t) 1)) (set! score (+ 100 score))]
+        [(and (equal? (count-matches token t) 1) (equal? (count-matches 1 t) 3)) (set! score (+ 500 score))]
+        )
+      ))
+  (for (
+        [j (in-range 4)]);;iteramos primero columnas
+    (for (
+        [i (in-range 3)]);;luego iteramos filas
+      (set! pos (+ (* i 7) j))
+            (define t (list (vector-ref board pos) (vector-ref board (+ 8 pos)) (vector-ref board (+ 16 pos)) (vector-ref board (+ 24 pos))))
+            (cond
+        [(equal? (count-matches token t) 4) (set! score (+ 1000 score))]
+        [(and (equal? (count-matches token t) 3) (equal? (count-matches 0 t) 1)) (set! score (+ 100 score))]
+        [(and (equal? (count-matches token t) 1) (equal? (count-matches 1 t) 3)) (set! score (+ 500 score))]
+        )
+      ))
+  
+    (for (
+        [j (in-range 3 7)]);;iteramos primero columnas
+    (for (
+        [i (in-range 3)]);;luego iteramos filas
+      (set! pos (+ (* i 7) j))
+      (define t (list (vector-ref board pos) (vector-ref board (+ 6 pos)) (vector-ref board (+ 12 pos)) (vector-ref board (+ 18 pos))))
+      (cond
+        [(equal? (count-matches token t) 4) (set! score (+ 1000 score))]
+        [(and (equal? (count-matches token t) 3) (equal? (count-matches 0 t) 1)) (set! score (+ 100 score))]
+        [(and (equal? (count-matches token t) 1) (equal? (count-matches 1 t) 3)) (set! score (+ 500 score))]
+        )
+      ))
+  ;;(displayln "Score")
+  ;;(displayln score)
+  ;;(sleep/yield 3)
+  score)
+
+(define (best-IA-move board token done-moves);;; para un tablero en especifico, se generan los posibles movimientos
+  (define temp-done-moves (vector-copy done-moves));;USAR COPIAS DEL TABLERO Y VECTORES
+  (define score 0)
+  (define temp-score 0)
+  (define temp-col (random 0 7))
+    (for (
+        [i (in-range 7)]);;para cada columna si la ficha es valida
+      (cond
+        [(< (vector-ref done-moves i) 6)
+           (define temp-board (vector-copy board));;tablero temporal!!!!!!
+           (define position (+ (* 7 (vector-ref done-moves i)) i));;posicion en el tablero temporal
+           (vector-set! temp-board position token);;se actualiza el tablero temporal
+           (set! temp-score  (score-IA-move temp-board token));;Se obtiene el puntaje de este tablero temporal
+           (cond[(> temp-score score) (set! score temp-score) (set! temp-col i)])]));;guardo el mayor puntaje y la columna
+  temp-col)
+      
+   
+;;;PENDIENTE: agregar la variable temporal tokens como parametro y copiarla, para definir empates en los nodos terminales
+(define (check-tie)
+  (cond
+    [(equal? tokens 42) #t]
+    [else #f]))
+
+   
+;;;Funciones de GANAR
+
+(define (check-win);;empate: -1, jugador 1, IA: 2
+  (define horizontal (check-4-horizontal v))
+  (define vertical (check-4-vertical v))
+  (define d1 (check-4-main-diagonal v))
+  (define d2 (check-4-second-diagonal v))
+  (cond
+    [(or (equal? 1 horizontal) (equal? 2 horizontal)) horizontal]
+    [(or (equal? 1 vertical) (equal? 2 vertical)) vertical]
+    [(or (equal? 1 d1) (equal? 2 d1)) d1]
+    [(or (equal? 1 d2) (equal? 2 d2)) d2]
+    [(equal? (check-tie) #t) -1];;si hay empate retorna -1
+    [else 0]));;0 no gana nadie
 
 (define (check-4-horizontal board)
   (define player 0); si gana p1->1,p2->2, sino 0
@@ -132,26 +255,7 @@
              (= (vector-ref board (+ pos 2)) (vector-ref board (+ 3 pos))))
         (set! player (vector-ref board pos)))))
   player)
-
-(define (check-tie)
-  (cond
-    [(equal? tokens 42) #t]
-    [else #f]))
  
-(define (check-win);;empate: -1, jugador 1, IA: 2
-  (define horizontal (check-4-horizontal v))
-  (define vertical (check-4-vertical v))
-  (define d1 (check-4-main-diagonal v))
-  (define d2 (check-4-second-diagonal v))
-  (cond
-    [(or (equal? 1 horizontal) (equal? 2 horizontal)) horizontal]
-    [(or (equal? 1 vertical) (equal? 2 vertical)) vertical]
-    [(or (equal? 1 d1) (equal? 2 d1)) d1]
-    [(or (equal? 1 d2) (equal? 2 d2)) d2]
-    [(equal? (check-tie) #t) -1];;si hay empate retorna -1
-    [else 0]));;0 no gana nadie
-    
-
 (define (check-4-vertical board)
   (define player 0); si gana p1->1,p2->2, sino 0
   (define pos 0)
@@ -210,6 +314,27 @@
         [j (in-range 7)]);;luego iteramos filas
       (set! pos (+ (* i 7) j))
       (printf " ~a " (vector-ref board pos)))(printf "\n")))
+
+(define (main-column board turn);;si la IA es 1, las columnas impares tienen mayor puntaje, si la IA 2, las pares
+  (define score 0)
+  (cond[(and (equal? (vector-ref board 3) turn) (equal? turn 1) ) (set! score (+ score 2)) ]
+       [(and (equal? (vector-ref board 3) turn) (equal? turn 2) ) (set! score (+ score 1)) ])
+  
+    (cond[(and (equal? (vector-ref board 10) turn) (equal? turn 2) ) (set! score (+ score 2)) ]
+       [(and (equal? (vector-ref board 10) turn) (equal? turn 1) ) (set! score (+ score 1)) ])
+  
+    (cond[(and (equal? (vector-ref board 17) turn) (equal? turn 1) ) (set! score (+ score 2)) ]
+       [(and (equal? (vector-ref board 17) turn) (equal? turn 2) ) (set! score (+ score 1)) ])
+  
+    (cond[(and (equal? (vector-ref board 24) turn) (equal? turn 2) ) (set! score (+ score 2)) ]
+       [(and (equal? (vector-ref board 24) turn) (equal? turn 1) ) (set! score (+ score 1)) ])
+  
+    (cond[(and (equal? (vector-ref board 31) turn) (equal? turn 1) ) (set! score (+ score 2)) ]
+       [(and (equal? (vector-ref board 31) turn) (equal? turn 2) ) (set! score (+ score 1)) ])
+  
+    (cond[(and (equal? (vector-ref board 38) turn) (equal? turn 2) ) (set! score (+ score 2)) ]
+       [(and (equal? (vector-ref board 38) turn) (equal? turn 1) ) (set! score (+ score 1)) ])
+    score)
 
 (define (draw-board indice)
   (cond
