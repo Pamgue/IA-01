@@ -142,7 +142,6 @@
 (define (score-IA-move board token)
   (define score 0)
   ;;(main-column board turn))
-  (displayln score)
   ;;(sleep/yield 1)
   (define pos 0)
     (for ( ;; horizontal check
@@ -205,16 +204,16 @@
   (define temp-score 0)
   (define temp-col (random 0 7))
   (define temp-board (vector-copy board));;tablero temporal!!!!!!
-   (set! temp-col(minmax temp-board 0 -inf.f  +inf.f  1 temp-col temp-done-moves))
+  (set! temp-col  (minmax temp-board 0 -inf.f  +inf.f  1 temp-col temp-done-moves))
   ;; (minmax board depth alpha beta maximizingPlayer col done-moves)
     
   temp-col)
       
    
 ;;;PENDIENTE: agregar la variable temporal tokens como parametro y copiarla, para definir empates en los nodos terminales
-(define (check-tie)
+(define (check-tie tmp_tokens)
   (cond
-    [(equal? tokens 42) #t]
+    [(equal?  tmp_tokens 42) #t]
     [else #f]))
 
    
@@ -230,7 +229,7 @@
     [(or (equal? 1 vertical) (equal? 2 vertical)) vertical]
     [(or (equal? 1 d1) (equal? 2 d1)) d1]
     [(or (equal? 1 d2) (equal? 2 d2)) d2]
-    [(equal? (check-tie) #t) -1];;si hay empate retorna -1
+    [(equal? (check-tie tokens) #t) -1];;si hay empate retorna -1
     [else 0]));;0 no gana nadie
 
 (define (check-4-horizontal board)
@@ -347,16 +346,18 @@
 
 (define (minmax board depth alpha beta maximizingPlayer col done-moves)
   (define tmp_done_moves (vector-copy done-moves ))
+  (define status (check-win-IA board done-moves)) ;-1 =  empate, 1=si gana jugador, 2=gana IA, 0=si no hay gane
   (cond
-    [(or (= (terminal board done-moves )1) (= depth max_depth)) (aux_score_move board tokens)] ;;hacer copia de tokens como con los vectores
+    [(or (= status 1) (= status -1) (= status 2) (= depth max_depth)) (aux_score_move board tokens status)] ;;hacer copia de tokens como con los vectores
     [ (= maximizingPlayer 1) (maximizing board depth alpha beta maximizingPlayer tmp_done_moves col)]
     [else (minimizing board depth alpha beta maximizingPlayer  tmp_done_moves col)]
     
     )
   )
 (define (minimizing board depth alpha beta maximizingPlayer done-moves col)
-  (define val -1000000000000000)
-  (define tmp_col col)
+   (define tmp_col_score (make-vector 2))
+  (vector-set! tmp_col_score 0 col )
+  (vector-set! tmp_col_score 1 -10000000)
   (define tmp_beta beta)
     (for (
            
@@ -368,24 +369,24 @@
            (define position (+ (* 7 (vector-ref done-moves i)) i));;posicion en el tablero temporal
            (vector-set! temp-board position 2);;se actualiza el tablero temporal
            (vector-set! tmp-done-moves i (+ 1 (vector-ref tmp-done-moves i)))
+           (define new-score (min (vector-ref tmp_col_score 1 ) (minmax  temp-board (+ 1 depth) alpha  tmp_beta 1 (vector-ref tmp_col_score 0)  tmp-done-moves )))
            (cond
-             [(= col -1) (set! tmp_col i)])
-           (define new-score (min val (minmax  temp-board (+ 1 depth) alpha  tmp_beta 1 tmp_col tmp-done-moves )))
-           (cond
-             [ (> new-score val) (set! val new-score) ])
-           (set!  tmp_beta (min beta val) )
+             [ (> new-score (vector-ref tmp_col_score 1 )) (set! tmp_col_score #(i new-score))])
+           (set!  tmp_beta (min beta  (vector-ref tmp_col_score 1 )) )
             '#:break (>= alpha  tmp_beta)
 
            ]
         )
       )
 
-  tmp_col
+  (vector-ref tmp_col_score 0 )
   )
    
 
 (define (maximizing board depth alpha beta maximizingPlayer done-moves col)
-  (define val -1000000000000000)
+  (define tmp_col_score (make-vector 2))
+  (vector-set! tmp_col_score 0 col )
+  (vector-set! tmp_col_score 1 -10000000)
   (define tmp_col col)
   (define tmp_alpha alpha)
     (for (
@@ -398,10 +399,11 @@
            (define position (+ (* 7 (vector-ref done-moves i)) i));;posicion en el tablero temporal
            (vector-set! temp-board position 2);;se actualiza el tablero temporal
            (vector-set! tmp-done-moves i (+ 1 (vector-ref tmp-done-moves i)))
-           (define new-score (max val (minmax  temp-board (+ 1 depth) tmp_alpha beta 0 i tmp-done-moves )))
+           (displayln tmp_col_score )
+           (define new-score (max  (vector-ref tmp_col_score 1 ) (minmax  temp-board (+ 1 depth) tmp_alpha beta 0 (vector-ref tmp_col_score 0) tmp-done-moves )))
            (cond
-             [ (> new-score val) (set! val new-score) ])
-           (set! tmp_alpha (max alpha val) )
+             [ (> new-score (vector-ref tmp_col_score 1 )) (vector-set! tmp_col_score 0 i ) (vector-set! tmp_col_score 1 new-score)])
+           (set! tmp_alpha (max alpha (vector-ref tmp_col_score 1 )) )
             (cond
              [(= col -1) (set! tmp_col i)])
             '#:break (>= tmp_alpha beta)
@@ -409,28 +411,19 @@
            ]
         )
       )
- tmp_col      
+ (vector-ref tmp_col_score 0 )   
 )
 
-(define (aux_score_move board tokens )
+(define (aux_score_move board tokens status)
      (cond
-       [( = (check-win-IA board) 1) -1000000000]
-       [( = (check-win-IA board) 2) 1000000000]
-       [( = (check-win-IA board) -1) 0]
+       [( = status 1) -1000000000]
+       [( = status 2) 1000000000]
+       [( = status -1) 0]
        [else (score-IA-move board 2)]
        )
       )   ;; (score-IA-move board token)
 
-(define (terminal board dones-moves)
-    (cond
-      [(= tokens 42) 1]
-      [(= 0 (check-win-IA board) ) 0 ] ; hacer la función que verificar el gane con el tablero temporal creado por el min max
-      [else 1]
-      )
-
-  )
-
-(define (check-win-IA board);;empate: -1, jugador 1, IA: 2
+(define (check-win-IA board tokens);;empate: -1, jugador 1, IA: 2
   (define horizontal (check-4-horizontal board))
   (define vertical (check-4-vertical board))
   (define d1 (check-4-main-diagonal board))
@@ -440,7 +433,7 @@
     [(or (equal? 1 vertical) (equal? 2 vertical)) vertical]
     [(or (equal? 1 d1) (equal? 2 d1)) d1]
     [(or (equal? 1 d2) (equal? 2 d2)) d2]
-    [(equal? (check-tie) #t) -1];;si hay empate retorna -1
+    [(equal? (check-tie tokens) #t) -1];;si hay empate retorna -1
     [else 0]));;0 no gana nadie
 
 (start-game)
