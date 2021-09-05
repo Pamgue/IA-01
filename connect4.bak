@@ -8,7 +8,7 @@
 (define tokens 0)
 (define game-status #t)
 (define actual-color "red")
-(define max_depth 4)
+(define max_depth 3)
 
 (open-graphics)
 
@@ -203,9 +203,9 @@
   (define temp-done-moves (vector-copy done-moves));;USAR COPIAS DEL TABLERO Y VECTORES
   (define score 0)
   (define temp-score 0)
-  (define temp-col (random 0 7))
+ 
   (define temp-board (vector-copy board));;tablero temporal!!!!!!
-   (set! temp-col(minmax temp-board 0 -inf.f  +inf.f  1 temp-col temp-done-moves))
+   (define temp-col(minmax temp-board 0 -inf.f  +inf.f  #t -1 temp-done-moves))
   ;; (minmax board depth alpha beta maximizingPlayer col done-moves)
     
   temp-col)
@@ -346,18 +346,17 @@
 
 
 (define (minmax board depth alpha beta maximizingPlayer col done-moves)
-  (define tmp_done_moves (vector-copy done-moves ))
   (cond
-    [(or (= (terminal board done-moves )1) (= depth max_depth)) (aux_score_move board tokens)] ;;hacer copia de tokens como con los vectores
-    [ (= maximizingPlayer 1) (maximizing board depth alpha beta maximizingPlayer tmp_done_moves col)]
-    [else (minimizing board depth alpha beta maximizingPlayer  tmp_done_moves col)]
+    [(or (= (terminal board done-moves )1) (= depth max_depth)) (aux_score_move board tokens col)] ;;hacer copia de tokens como con los vectores
+    [ maximizingPlayer? (maximizing board depth alpha beta maximizingPlayer col)]
+    [else (minimizing board depth alpha beta maximizingPlayer col )]
     
     )
   )
 (define (minimizing board depth alpha beta maximizingPlayer done-moves col)
   (define val -1000000000000000)
   (define tmp_col col)
-  (define tmp_beta beta)
+  (define tmp_alpha alpha)
     (for (
            
         [i (in-range 7)]);;para cada columna si la ficha es valida
@@ -367,14 +366,14 @@
            (define tmp-done-moves  (vector-copy done-moves))
            (define position (+ (* 7 (vector-ref done-moves i)) i));;posicion en el tablero temporal
            (vector-set! temp-board position 2);;se actualiza el tablero temporal
-           (vector-set! tmp-done-moves i (+ 1 (vector-ref tmp-done-moves i)))
+           (vector-set! tmp-done-moves i (+ 1 (vector-ref tmp-done-moves)))
            (cond
              [(= col -1) (set! tmp_col i)])
-           (define new-score (min val (minmax  temp-board (+ 1 depth) alpha  tmp_beta 1 tmp_col tmp-done-moves )))
+           (define new-score (min val (minmax  temp-board (+ 1 depth) tmp_alpha beta #f tmp_col )))
            (cond
              [ (> new-score val) (set! val new-score) ])
-           (set!  tmp_beta (min beta val) )
-            '#:break (>= alpha  tmp_beta)
+           (set! tmp_alpha (min alpha val) )
+            '#:break (>= tmp_alpha beta)
 
            ]
         )
@@ -397,8 +396,8 @@
            (define tmp-done-moves  (vector-copy done-moves))
            (define position (+ (* 7 (vector-ref done-moves i)) i));;posicion en el tablero temporal
            (vector-set! temp-board position 2);;se actualiza el tablero temporal
-           (vector-set! tmp-done-moves i (+ 1 (vector-ref tmp-done-moves i)))
-           (define new-score (max val (minmax  temp-board (+ 1 depth) tmp_alpha beta 0 i tmp-done-moves )))
+           (vector-set! tmp-done-moves i (+ 1 (vector-ref tmp-done-moves)))
+           (define new-score (max val (minmax  temp-board (+ 1 depth) tmp_alpha beta #f i )))
            (cond
              [ (> new-score val) (set! val new-score) ])
            (set! tmp_alpha (max alpha val) )

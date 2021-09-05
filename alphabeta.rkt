@@ -19,10 +19,15 @@
     [else 0]))
 
 (define (maxvalue node depth value alpha beta)
-  (define col get-col); get-col devuelve las posibles jugadas
-  (for (i col) ; por cada posible jugada hace el min max
+  (define col 7); get-col devuelve las posibles jugadas
+  (for (i (in-range 6)) ; por cada posible jugada hace el min max
     #:break (>= alpha beta) ;se corta esta hoja o se puede retornar null con un cond
-    (max alpha (max val (alphabeta node (- depth 1) alpha beta #f )) )  ; se debería enviar el hijo de el node
+    cond(
+         [(= i 6) ]
+         [else(max alpha (max val (alphabeta node (- depth 1) alpha beta #f )) )  ]
+         )
+         
+     ; se debería enviar el hijo de el node
 
     )   
   
@@ -42,8 +47,3 @@
 ;(alphabeta 1 0 -1 +2 true)
 ;(alphabeta 2 0 -1 +2 #t)
 
-; esta me imagino que hay que definirla, cierto?
-(define (get-col node)
-  (cond
-    [(= node 1)(list 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 )])
- )
