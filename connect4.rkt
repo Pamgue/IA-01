@@ -8,7 +8,7 @@
 (define tokens 0)
 (define game-status #t)
 (define actual-color "red")
-(define max-depth 7)
+(define max-depth 6)
 (define IA-token 2)
 (define player-token 1)
 
@@ -65,8 +65,10 @@
     [else
            (print-board v)
            (displayln "Turno IA, elija columna 0-6")
-           (sleep/yield 2)
-           (check-valid-move (first (best-IA-move v turn celds)))
+           ;;(sleep/yield 2)
+           (time
+            (check-valid-move (first (best-IA-move v turn celds)))(void))
+        
            (cond [(equal? (check-win) 1)(set! game-status #f) (displayln "Jugador gana")]
                     [(equal? (check-win) 2)(set! game-status #f) (displayln "IA gana")]
                     [(equal? (check-win) -1)(set! game-status #f) (displayln "Empate")]
@@ -121,7 +123,7 @@
    ))
 
 
-(define (tokens-score tokens token)
+(define (tokens-score tokens token);; 
     (if (and
        (= (list-ref tokens 0) token)
        (= (list-ref tokens 1) token)
@@ -330,10 +332,10 @@
            (define temp-done-moves  (vector-copy done-moves))
            (vector-set! temp-board (+ (* 7 (vector-ref done-moves col)) col) maximizing)
            (vector-set! temp-done-moves col (+ 1 (vector-ref temp-done-moves col)))
-           (define new-score (minimax temp-board (+ 1 depth) alpha beta (if (= maximizing IA-token) player-token IA-token) col temp-done-moves (+ 1 total)))
+           (define new-score (minimax temp-board (+ 1 depth) alpha beta player-token col temp-done-moves (+ 1 total)))
            (cond [(> (second new-score) max-score) 
-               (maximize board depth (max alpha (second new-score) max-score) beta (second new-score) col maximizing done-moves (+ 1 col) total)]
-               [else (maximize board depth (max alpha (second new-score) max-score) beta max-score max-col maximizing done-moves (+ 1 col) total)])]
+               (maximize board depth (max alpha (second new-score)) beta (second new-score) col maximizing done-moves (+ 1 col) total)]
+               [else (maximize board depth (max alpha max-score) beta max-score max-col maximizing done-moves (+ 1 col) total)])]
            [else(maximize board depth alpha beta max-score max-col maximizing done-moves (+ 1 col) total)]
            )]))
 
@@ -348,23 +350,15 @@
            (define temp-done-moves  (vector-copy done-moves))
            (vector-set! temp-board (+ (* 7 (vector-ref done-moves col)) col) maximizing)
            (vector-set! temp-done-moves col (+ 1 (vector-ref temp-done-moves col)))
-           (define new-score (minimax temp-board (+ 1 depth) alpha beta (if (= maximizing IA-token) player-token IA-token) col temp-done-moves (+ 1 total)))
+           (define new-score (minimax temp-board (+ 1 depth) alpha beta IA-token col temp-done-moves (+ 1 total)))
            (cond [(< (second new-score) max-score)
-               (minimize board depth alpha (min beta (second new-score) max-score) (second new-score) col maximizing done-moves (+ 1 col) total)]
+               (minimize board depth alpha (min beta (second new-score)) (second new-score) col maximizing done-moves (+ 1 col) total)]
                  [else
-               (minimize board depth alpha (min beta (second new-score) max-score) max-score max-col maximizing done-moves (+ 1 col) total)])]
+               (minimize board depth alpha (min beta max-score) max-score max-col maximizing done-moves (+ 1 col) total)])]
         [else(minimize board depth alpha beta max-score max-col maximizing done-moves (+ 1 col) total)]
         )]
     ))
   
-(define (aux-score-move board tokens status)
-     (cond
-       [( = status 1) (list "-" -100000000000)]
-       [( = status 2) (list "-" 1000000000000)]
-       [( = status -1) (list "-" 0)]
-       [else (list " " (score-IA-move board turn))]
-       ))  
-
 (define (check-win-IA board tokens)
   (define horizontal (check-4-horizontal board))
   (define vertical (check-4-vertical board))
