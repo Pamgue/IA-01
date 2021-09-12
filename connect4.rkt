@@ -8,7 +8,7 @@
 (define tokens 0)
 (define game-status #t)
 (define actual-color "red")
-(define max_depth 4)
+(define max-depth 7)
 (define IA-token 2)
 (define player-token 1)
 
@@ -121,71 +121,77 @@
    ))
 
 
+(define (tokens-score tokens token)
+    (if (and
+       (= (list-ref tokens 0) token)
+       (= (list-ref tokens 1) token)
+       (= (list-ref tokens 2) token)
+       (= (list-ref tokens 3) token)
+      ) 10 (if (and
+       (= (list-ref tokens 0) token)
+       (or
+       (= (list-ref tokens 1) token)
+       (= (list-ref tokens 1) 0))
+       (or
+       (= (list-ref tokens 2) token)
+       (= (list-ref tokens 2) 0))
+       (or
+       (= (list-ref tokens 3) token)
+       (= (list-ref tokens 3) 0))
+      ) 1 0)))
 
-(define (score-IA-move board token)
-  (define score 0)
+ 
+(define (score-IA-move board)
+  (define score-IA 0)
+  (define score-player 0)
   (define pos 0)
     (for (
         [i (in-range 6)])
     (for (
         [j (in-range 4)])
-      (define t (list (vector-ref board pos) (vector-ref board (+ 1 pos)) (vector-ref board (+ 2 pos)) (vector-ref board (+ 3 pos))))
-      
       (set! pos (+ (* i 7) j))
-      (cond
-        [(equal? (count-matches token t) 4) (displayln t) (set! score (+ 100 score))]
-        [(and (equal? (count-matches token t) 3) (equal? (count-matches 0 t) 1)) (set! score (+ 5 score))]
-        [(and (equal? (count-matches token t) 2) (equal? (count-matches 0 t) 2)) (set! score (+ score 2))]
-        [(and (equal? (count-matches 1 t) 3) (equal? (count-matches 0 t) 1)) (set! score (- score 4))]
-        )
-     ))
+      (define t (list (vector-ref board pos) (vector-ref board (+ 1 pos)) (vector-ref board (+ 2 pos)) (vector-ref board (+ 3 pos))))
+      (set! score-IA (+ score-IA (tokens-score t IA-token)))
+      (set! score-player (+ score-player (tokens-score t player-token)))))
   (for ( ;; vertical check
         [j (in-range 7)]);;iteramos primero columnas
     (for (
         [i (in-range 3)]);;luego iteramos filas
       (set! pos (+ (* i 7) j))
       (define t (list (vector-ref board pos) (vector-ref board (+ 7 pos)) (vector-ref board (+ 14 pos)) (vector-ref board (+ 21 pos))))
-      (cond
-        [(equal? (count-matches token t) 4) (displayln t) (set! score (+ 100 score))]
-        [(and (equal? (count-matches token t) 3) (equal? (count-matches 0 t) 1)) (set! score (+ 5 score))]
-        [(and (equal? (count-matches token t) 2) (equal? (count-matches 0 t) 2)) (set! score (+ score 2))]
-        [(and (equal? (count-matches 1 t) 3) (equal? (count-matches 0 t) 1)) (set! score (- score 4))]
-        )
-      ))
+      (set! score-IA (+ score-IA (tokens-score t IA-token)))
+      (set! score-player (+ score-player (tokens-score t player-token)))))
+;;(displayln "Diagonal /") 
   (for ( ;; diagonal check
-        [j (in-range 4)]);;iteramos primero columnas
-    (for (
-        [i (in-range 3)]);;luego iteramos filas
-      (set! pos (+ (* i 7) j))
-            (define t (list (vector-ref board pos) (vector-ref board (+ 8 pos)) (vector-ref board (+ 16 pos)) (vector-ref board (+ 24 pos))))
-            (cond
-        [(equal? (count-matches token t) 4)(displayln t) (set! score (+ 100 score))]
-        [(and (equal? (count-matches token t) 3) (equal? (count-matches 0 t) 1)) (set! score (+ 5 score))]
-        [(and (equal? (count-matches token t) 2) (equal? (count-matches 0 t) 2)) (set! score (+ score 2))]
-        [(and (equal? (count-matches 1 t) 3) (equal? (count-matches 0 t) 1)) (set! score (- score 4))]
-        )
-      ))
-    (for (
         [j (in-range 3 7)]);;iteramos primero columnas
     (for (
         [i (in-range 3)]);;luego iteramos filas
       (set! pos (+ (* i 7) j))
       (define t (list (vector-ref board pos) (vector-ref board (+ 6 pos)) (vector-ref board (+ 12 pos)) (vector-ref board (+ 18 pos))))
-      (cond
-        [(equal? (count-matches token t) 4)(displayln t) (set! score (+ 100 score))]
-        [(and (equal? (count-matches token t) 3) (equal? (count-matches 0 t) 1)) (set! score (+ 5 score))]
-        [(and (equal? (count-matches token t) 2) (equal? (count-matches 0 t) 2)) (set! score (+ score 2))]
-        [(and (equal? (count-matches 1 t) 3) (equal? (count-matches 0 t) 1)) (set! score (- score 4))]
-        )
-      ))
-  (displayln score)
-  score)
+      (set! score-IA (+ score-IA (tokens-score t IA-token)))
+      (set! score-player (+ score-player (tokens-score t player-token)))))
+  ;;(displayln "Diagonal \\") 
+    (for (
+        [j (in-range 4)]);;iteramos primero columnas
+    (for (
+        [i (in-range 3)]);;luego iteramos filas
+      (set! pos (+ (* i 7) j))
+      (define t (list (vector-ref board pos) (vector-ref board (+ 8 pos)) (vector-ref board (+ 16 pos)) (vector-ref board (+ 24 pos))))
+      (set! score-IA (+ score-IA (tokens-score t IA-token)))
+      (set! score-player (+ score-player (tokens-score t player-token)))))
+  (- score-IA score-player))
+
+(define (evaluation board total)
+  (define status (check-win-IA board total))
+  (cond [(equal? status 2) 10000]
+        [(equal? status 1) -10000]
+        [else (score-IA-move board) ]))
+  
+
 
 (define (best-IA-move board token done-moves);;; para un tablero en especifico, se generan los posibles movimientos, board=42, done moves = 7,
-  (define result (minimax board 0 -1000000000000 1000000000000 IA-token (random-position done-moves) done-moves tokens))
+  (define result (minimax board 0 -10000 10000 IA-token (random-position done-moves) done-moves tokens))
   (displayln result)
-              
-    
   result)
       
    
@@ -286,26 +292,6 @@
       (set! pos (+ (* i 7) j))
       (printf " ~a " (vector-ref board pos)))(printf "\n")))
 
-(define (main-column board turn);;si la IA es 1, las columnas impares tienen mayor puntaje, si la IA 2, las pares
-  (define score 0)
-  (cond[(and (equal? (vector-ref board 3) turn) (equal? turn 1) ) (set! score (+ score 2)) ]
-       [(and (equal? (vector-ref board 3) turn) (equal? turn 2) ) (set! score (+ score 1)) ])
-  
-    (cond[(and (equal? (vector-ref board 10) turn) (equal? turn 2) ) (set! score (+ score 2)) ]
-       [(and (equal? (vector-ref board 10) turn) (equal? turn 1) ) (set! score (+ score 1)) ])
-  
-    (cond[(and (equal? (vector-ref board 17) turn) (equal? turn 1) ) (set! score (+ score 2)) ]
-       [(and (equal? (vector-ref board 17) turn) (equal? turn 2) ) (set! score (+ score 1)) ])
-  
-    (cond[(and (equal? (vector-ref board 24) turn) (equal? turn 2) ) (set! score (+ score 2)) ]
-       [(and (equal? (vector-ref board 24) turn) (equal? turn 1) ) (set! score (+ score 1)) ])
-  
-    (cond[(and (equal? (vector-ref board 31) turn) (equal? turn 1) ) (set! score (+ score 2)) ]
-       [(and (equal? (vector-ref board 31) turn) (equal? turn 2) ) (set! score (+ score 1)) ])
-  
-    (cond[(and (equal? (vector-ref board 38) turn) (equal? turn 2) ) (set! score (+ score 2)) ]
-       [(and (equal? (vector-ref board 38) turn) (equal? turn 1) ) (set! score (+ score 1)) ])
-    score)
 
 (define (draw-board indice)
   (cond
@@ -315,47 +301,41 @@
      (draw-board (add1 indice))
 ]))
 
-
-
-
-
 ;; min max with poda
-
-
-
-(define (minimax board depth alpha beta maximizing position done-moves total)
-
-  (define status (check-win-IA board total)) ;-1 =  empate, 1=si gana jugador, 2=gana IA, 0=si no hay gane;; saber si es terminal o no
-  (cond
-    [(or (= status 1) (= status -1) (= status 2) (= depth max_depth)) (aux-score-move board tokens status)] ;;hacer copia de tokens como con los vectores
-    [ (= maximizing IA-token) (maximize board depth -1000000000000 1000000000000 -1000000000000 (random-position done-moves) maximizing done-moves 0 total)];;IA
-    [ (= maximizing player-token) (minimize board depth -1000000000000 1000000000000 1000000000000 (random-position done-moves) maximizing done-moves 0 total)];;Jugador
-    ))
-
 
 (define (random-position done-moves)
   (define rand (random 0 7))
   (if (< (vector-ref done-moves rand) 5) rand (random-position done-moves)))
      
+
+(define (minimax board depth alpha beta maximizing position done-moves total)
+  (define status (check-win-IA board total)) ;-1 =  empate, 1=si gana jugador, 2=gana IA, 0=si no hay gane;; saber si es terminal o no
+  (cond
+    [(= depth max-depth) (list " " (evaluation board total))]
+    [( = status 1) (list "-" -10000)]
+    [( = status 2) (list "-" 10000)] 
+    [( = status -1) (list "-" 0)]
+    [(= maximizing IA-token) (maximize board depth alpha beta -10000 3 maximizing done-moves 0 total)];;IA
+    [(= maximizing player-token) (minimize board depth alpha beta 10000 3 maximizing done-moves 0 total)];;Jugador
+))
+
 (define (maximize board depth alpha beta max-score max-col maximizing done-moves col total)
   (cond
     [(equal? col 7) (list max-col max-score)]
-    [(>= alpha beta)(list max-col max-score)]
+    [(>= alpha beta) (list max-col max-score)]
     [else
      (cond
         [(< (vector-ref done-moves col) 6)
            (define temp-board (vector-copy board))
            (define temp-done-moves  (vector-copy done-moves))
            (vector-set! temp-board (+ (* 7 (vector-ref done-moves col)) col) maximizing)
-
+           (vector-set! temp-done-moves col (+ 1 (vector-ref temp-done-moves col)))
            (define new-score (minimax temp-board (+ 1 depth) alpha beta (if (= maximizing IA-token) player-token IA-token) col temp-done-moves (+ 1 total)))
-           (cond
-             [ (> (second new-score) max-score)
-               (maximize board depth (max alpha (second new-score) max-score) beta (second new-score) col maximizing done-moves (+ 1 col) total)
-               (maximize board depth (max alpha (second new-score) max-score) beta max-score max-col maximizing done-moves (+ 1 col) total)]
-             )]
-        )]
-    ))
+           (cond [(> (second new-score) max-score) 
+               (maximize board depth (max alpha (second new-score) max-score) beta (second new-score) col maximizing done-moves (+ 1 col) total)]
+               [else (maximize board depth (max alpha (second new-score) max-score) beta max-score max-col maximizing done-moves (+ 1 col) total)])]
+           [else(maximize board depth alpha beta max-score max-col maximizing done-moves (+ 1 col) total)]
+           )]))
 
 (define (minimize board depth alpha beta max-score max-col maximizing done-moves col total)
   (cond
@@ -367,28 +347,20 @@
            (define temp-board (vector-copy board))
            (define temp-done-moves  (vector-copy done-moves))
            (vector-set! temp-board (+ (* 7 (vector-ref done-moves col)) col) maximizing)
+           (vector-set! temp-done-moves col (+ 1 (vector-ref temp-done-moves col)))
            (define new-score (minimax temp-board (+ 1 depth) alpha beta (if (= maximizing IA-token) player-token IA-token) col temp-done-moves (+ 1 total)))
-           (cond
-             [ (< (second new-score) max-score)
-               (minimize board depth (min beta (second new-score) max-score) beta (second new-score) col maximizing done-moves (+ 1 col) total)
-               (minimize board depth (min beta (second new-score) max-score) beta max-score max-col maximizing done-moves (+ 1 col) total)]
-             )]
+           (cond [(< (second new-score) max-score)
+               (minimize board depth alpha (min beta (second new-score) max-score) (second new-score) col maximizing done-moves (+ 1 col) total)]
+                 [else
+               (minimize board depth alpha (min beta (second new-score) max-score) max-score max-col maximizing done-moves (+ 1 col) total)])]
+        [else(minimize board depth alpha beta max-score max-col maximizing done-moves (+ 1 col) total)]
         )]
     ))
   
-
-(define (update-board board done-moves position token)
-  (vector-set! board (+ (* 7 (vector-ref done-moves position)) position) token)
-  (display board))
-
-
-(define (update-done-moves done-moves position)
-  (vector-set! done-moves position (+ 1 (vector-ref done-moves position))))
-
 (define (aux-score-move board tokens status)
      (cond
-       [( = status 1) (list "-" -100000000000000)]
-       [( = status 2) (list "-" 100000000000000)]
+       [( = status 1) (list "-" -100000000000)]
+       [( = status 2) (list "-" 1000000000000)]
        [( = status -1) (list "-" 0)]
        [else (list " " (score-IA-move board turn))]
        ))  
